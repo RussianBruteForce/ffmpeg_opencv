@@ -1,0 +1,17 @@
+#!/bin/sh
+
+CPPLINT=~/.local/lib/python3.5/site-packages/cpplint.py
+
+FILTER=-whitespace/comments,+build/header_guard,+legal/copyright,+readability/alt_tokens,-build/include_subdir,-whitespace/braces,-whitespace/tab,+build/include_what_you_use,-build/namespaces,-whitespace/indent,-legal/copyright,-build/include_order,-build/include
+
+SRC=.
+TESTS=$SRC/tests
+
+#exclude
+GIT=$SRC/.git
+WEBSOCKET=$SRC/websocketpp
+NETBEANS=$SRC/nbproject
+CMAKE_FILES=$SRC/CMakeFiles
+
+find $SRC $TESTS -regex '.*\(h\|cpp\|c\)$' -exec $CPPLINT --filter=$FILTER {} \; \
+	-o -type d \( -path $WEBSOCKET -o -path $NETBEANS -o -path $CMAKE_FILES -o -path $GIT \) -prune
