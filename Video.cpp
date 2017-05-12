@@ -10,6 +10,9 @@ extern "C" {
 Video::Video(void *data_ptr, size_t data_size)
     : bd{static_cast<uint8_t *>(data_ptr), data_size}
 {
+	av_register_all();
+	avcodec_register_all();
+
 	init_stream();
 	init_frame_converted();
 	init_codec();
