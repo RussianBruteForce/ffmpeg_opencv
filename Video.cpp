@@ -175,10 +175,10 @@ void Video::init_stream()
 void Video::init_codec()
 {
 	auto codec = avcodec_find_decoder(video_stream->codec->codec_id);
-	errcheck(codec, "codec not found");
+	errcheck(codec, "Codec not found");
 
 	video_ctx = avcodec_alloc_context3(codec);
-	errcheck(video_ctx, "video: could not allocate video codec contex");
+	errcheck(video_ctx, "Could not allocate video codec contex");
 
 	if (codec->capabilities & AV_CODEC_CAP_TRUNCATED)
 		video_ctx->flags |=
