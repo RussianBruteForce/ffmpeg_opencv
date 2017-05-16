@@ -64,7 +64,7 @@ Video::Video()
 	frame = av_frame_alloc();
 	errcheck(frame, "Could not allocate frame");
 
-	pkt = static_cast<AVPacket*>(av_malloc(sizeof(AVPacket)));
+	pkt = static_cast<AVPacket *>(av_malloc(sizeof(AVPacket)));
 	errcheck(pkt, "Could not allocate packet");
 	av_init_packet(pkt);
 }
