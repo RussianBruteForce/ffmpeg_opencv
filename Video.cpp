@@ -7,6 +7,55 @@ extern "C" {
 #include <iostream>
 #include <stdexcept>
 
+namespace
+{
+using str_t = decltype(Video::TAG);
+
+static str_t averr(int code)
+{
+	static thread_local std::array<char, AV_ERROR_MAX_STRING_SIZE> buf;
+	av_make_error_string(buf.data(), buf.size(), code);
+	return str_t(buf.data(), buf.size());
+}
+
+static str_t errstr(int err) { return Video::TAG + ": " + averr(err); }
+
+static str_t errstr(const char *err) { return Video::TAG + ": " + err; }
+
+static void errthrow(str_t err) { throw std::runtime_error{std::move(err)}; }
+
+static void errcheck(int val)
+{
+	if (val < 0)
+		errthrow(errstr(val));
+}
+
+template <class T> static void errcheck(T *ptr, const char *errmsg)
+{
+	if (!ptr)
+		errthrow(errstr(errmsg));
+}
+
+static int read_packet(void *opaque, uint8_t *buf, int buf_size)
+{
+	struct _bd {
+		uint8_t *ptr;
+		size_t size;
+	};
+	_bd *bd = static_cast<_bd *>(opaque);
+
+	buf_size = FFMIN(buf_size, bd->size);
+
+	memcpy(buf, bd->ptr, buf_size);
+	bd->ptr += buf_size;
+	bd->size -= buf_size;
+
+	return buf_size;
+}
+}
+
+std::string Video::TAG = "AV";
+
 Video::Video(void *data_ptr, size_t data_size)
     : bd{static_cast<uint8_t *>(data_ptr), data_size}
 {
@@ -18,8 +67,7 @@ Video::Video(void *data_ptr, size_t data_size)
 	init_codec();
 
 	frame = av_frame_alloc();
-	if (!frame)
-		throw std::runtime_error{"video: could not allocate frame"};
+	errcheck(frame, "Could not allocate frame");
 
 	av_init_packet(&pkt);
 	pkt.data = nullptr;
@@ -53,27 +101,25 @@ void Video::process(
 		int got_frame;
 		auto len =
 		    avcodec_decode_video2(video_ctx, frame, &got_frame, &pkt);
-		if (len < 0)
-			throw std::runtime_error{
-			    "video: error while decoding frame " +
-			    std::to_string(frame_count)};
+		errcheck(len);
 
-		if (got_frame) {
-			auto w = frame->width;
-			auto h = frame->height;
-			auto gray_convert_ctx = sws_getContext(
-			    w, h, input_pix_format, w, h, output_pix_format,
-			    SWS_POINT, nullptr, nullptr, nullptr);
+		if (got_frame == 0)
+			errthrow("No frame could be decompressed");
 
-			sws_scale(gray_convert_ctx, frame->data,
-				  frame->linesize, 0, h, frame_converted->data,
-				  frame_converted->linesize);
+		auto w = frame->width;
+		auto h = frame->height;
+		auto gray_convert_ctx = sws_getContext(
+		    w, h, input_pix_format, w, h, output_pix_format, SWS_POINT,
+		    nullptr, nullptr, nullptr);
 
-			f_(frame_converted->data[0],
-			   frame_converted->linesize[0], w, h);
-			++frame_count;
-			sws_freeContext(gray_convert_ctx);
-		}
+		sws_scale(gray_convert_ctx, frame->data, frame->linesize, 0, h,
+			  frame_converted->data, frame_converted->linesize);
+
+		f_(frame_converted->data[0], frame_converted->linesize[0], w,
+		   h);
+		++frame_count;
+		sws_freeContext(gray_convert_ctx);
+
 		if (pkt.data) {
 			pkt.size -= len;
 			pkt.data += len;
@@ -81,49 +127,25 @@ void Video::process(
 	}
 }
 
-static int read_packet(void *opaque, uint8_t *buf, int buf_size)
-{
-	struct _bd {
-		uint8_t *ptr;
-		size_t size;
-	};
-	_bd *bd = static_cast<_bd *>(opaque);
-
-	buf_size = FFMIN(buf_size, bd->size);
-
-	memcpy(buf, bd->ptr, buf_size);
-	bd->ptr += buf_size;
-	bd->size -= buf_size;
-
-	return buf_size;
-}
-
 void Video::init_stream()
 {
 	ctx = avformat_alloc_context();
-	if (!ctx)
-		throw std::runtime_error{
-		    "video: could not allocate format contex"};
+	errcheck(ctx, "Could not allocate format contex");
 
 	avio_ctx_buffer =
 	    static_cast<uint8_t *>(av_malloc(avio_ctx_buffer_size));
-	if (!avio_ctx_buffer)
-		throw std::runtime_error{"video: could not allocate io buffer"};
+	errcheck(avio_ctx_buffer, "Could not allocate io buffer");
 
 	avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size, 0,
 				      &bd, &read_packet, nullptr, nullptr);
-	if (!avio_ctx)
-		throw std::runtime_error{"video: could not allocate io contex"};
+	errcheck(avio_ctx, "Could not allocate io contex");
 	ctx->pb = avio_ctx;
 
 	auto status = avformat_open_input(&ctx, nullptr, nullptr, nullptr);
-	if (status < 0)
-		throw std::runtime_error{"video: could not open input"};
+	errcheck(status);
 
 	status = avformat_find_stream_info(ctx, nullptr);
-	if (status < 0)
-		throw std::runtime_error{
-		    "video: could not find stream information"};
+	errcheck(status);
 
 	video_stream = ctx->streams[av_find_default_stream_index(ctx)];
 
@@ -136,37 +158,34 @@ void Video::init_stream()
 void Video::init_codec()
 {
 	auto codec = avcodec_find_decoder(video_stream->codec->codec_id);
-	if (!codec)
-		throw std::runtime_error{"video: codec not found"};
+	errcheck(codec, "codec not found");
 
 	video_ctx = avcodec_alloc_context3(codec);
-	if (!video_ctx)
-		throw std::runtime_error{
-		    "video: could not allocate video codec contex"};
+	errcheck(video_ctx, "video: could not allocate video codec contex");
 
 	if (codec->capabilities & AV_CODEC_CAP_TRUNCATED)
 		video_ctx->flags |=
 		    AV_CODEC_FLAG_TRUNCATED; // we do not send complete frames
 
-	if (avcodec_open2(video_ctx, codec, nullptr) < 0)
-		throw std::runtime_error{"video: could not open codec"};
+	auto status = avcodec_open2(video_ctx, codec, nullptr);
+	errcheck(status);
 }
 
 void Video::init_frame_converted()
 {
 	frame_converted = av_frame_alloc();
-	if (!frame_converted)
-		throw std::runtime_error{"video: could not allocate frame"};
+	errcheck(frame_converted, "Could not allocate frame");
 
 	int frame_converted_buffer_size =
 	    avpicture_get_size(output_pix_format, width, heigh);
+	errcheck(frame_converted_buffer_size);
 
 	frame_converted_buffer =
 	    static_cast<uint8_t *>(av_malloc(frame_converted_buffer_size));
-	if (!frame_converted_buffer)
-		throw std::runtime_error{
-		    "video: could not allocate picture buffer"};
+	errcheck(frame_converted_buffer, "Could not allocate picture buffer");
 
-	avpicture_fill(reinterpret_cast<AVPicture *>(frame_converted),
-		       frame_converted_buffer, output_pix_format, width, heigh);
+	auto status = avpicture_fill(
+	    reinterpret_cast<AVPicture *>(frame_converted),
+	    frame_converted_buffer, output_pix_format, width, heigh);
+	errcheck(status);
 }

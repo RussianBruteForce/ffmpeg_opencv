@@ -10,6 +10,8 @@ extern "C" {
 class Video
 {
       public:
+	static std::string TAG;
+
 	Video(void *data_ptr, size_t data_size);
 	~Video();
 
