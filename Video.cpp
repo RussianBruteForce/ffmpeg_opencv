@@ -149,7 +149,7 @@ void Video::process(
 void Video::init_stream()
 {
 	ctx = avformat_alloc_context();
-	errcheck(ctx, "Could not allocate format contex");
+	errcheck(ctx, "Could not allocate format context");
 
 	avio_ctx_buffer =
 	    static_cast<uint8_t *>(av_malloc(avio_ctx_buffer_size));
@@ -157,7 +157,7 @@ void Video::init_stream()
 
 	avio_ctx = avio_alloc_context(avio_ctx_buffer, avio_ctx_buffer_size, 0,
 				      &bd, &read_packet, nullptr, nullptr);
-	errcheck(avio_ctx, "Could not allocate io contex");
+	errcheck(avio_ctx, "Could not allocate io context");
 	ctx->pb = avio_ctx;
 
 	auto status = avformat_open_input(&ctx, nullptr, nullptr, nullptr);
@@ -180,7 +180,7 @@ void Video::init_codec()
 	errcheck(codec, "Codec not found");
 
 	video_ctx = avcodec_alloc_context3(codec);
-	errcheck(video_ctx, "Could not allocate video codec contex");
+	errcheck(video_ctx, "Could not allocate video codec context");
 
 	if (codec->capabilities & AV_CODEC_CAP_TRUNCATED)
 		video_ctx->flags |=
