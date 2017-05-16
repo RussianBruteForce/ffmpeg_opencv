@@ -27,8 +27,9 @@ class Video
 		size_t size;
 	} bd;
 
-	AVCodecContext *video_ctx;
-	AVStream *video_stream;
+	bool video_ctx_opened{false};
+	AVCodecContext *video_ctx{nullptr};
+	AVStream *video_stream{nullptr};
 
 	size_t width;
 	size_t heigh;
