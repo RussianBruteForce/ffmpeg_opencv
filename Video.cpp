@@ -170,8 +170,10 @@ void Video::init_stream()
 		auto stream = ctx->streams[i];
 		if (!stream || !stream->codec)
 			continue;
-		if (stream->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+		if (stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
 			video_stream = stream;
+			break;
+		}
 	}
 	errcheck(video_stream, "Could not find valid video stream");
 
