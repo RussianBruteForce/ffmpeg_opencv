@@ -56,15 +56,10 @@ static int read_packet(void *opaque, uint8_t *buf, int buf_size)
 
 std::string Video::TAG = "AV";
 
-Video::Video(void *data_ptr, size_t data_size)
-    : bd{static_cast<uint8_t *>(data_ptr), data_size}
+Video::Video()
 {
 	av_register_all();
 	avcodec_register_all();
-
-	init_stream();
-	init_frame_converted();
-	init_codec();
 
 	frame = av_frame_alloc();
 	errcheck(frame, "Could not allocate frame");
@@ -72,6 +67,11 @@ Video::Video(void *data_ptr, size_t data_size)
 	av_init_packet(&pkt);
 	pkt.data = nullptr;
 	pkt.size = 0;
+}
+
+Video::Video(void *data_ptr, size_t data_size) : Video()
+{
+	set(data_ptr, data_size);
 }
 
 Video::~Video()
@@ -91,6 +91,16 @@ Video::~Video()
 		av_freep(&frame_converted_buffer);
 	if (frame_converted)
 		av_frame_free(&frame_converted);
+}
+
+void Video::set(void *data_ptr, size_t data_size)
+{
+	bd.ptr = static_cast<uint8_t *>(data_ptr);
+	bd.size = data_size;
+
+	init_stream();
+	init_frame_converted();
+	init_codec();
 }
 
 void Video::process(

@@ -12,9 +12,11 @@ class Video
       public:
 	static std::string TAG;
 
+	Video();
 	Video(void *data_ptr, size_t data_size);
 	~Video();
 
+	void set(void *data_ptr, size_t data_size);
 	void process(std::function<void(unsigned char *, int, int, int)> f_);
 
       private:

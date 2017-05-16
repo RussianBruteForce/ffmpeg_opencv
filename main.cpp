@@ -38,7 +38,8 @@ int main(int argc, const char **argv)
 
 		Classifier c;
 		{
-			Video v{data.data(), data.size()};
+			Video v;
+			v.set(data.data(), data.size());
 
 			v.process([&c](unsigned char *data, int wrap, int xsize,
 				       int ysize) {
