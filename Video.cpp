@@ -77,9 +77,10 @@ Video::Video(void *data_ptr, size_t data_size) : Video()
 Video::~Video()
 {
 	avformat_close_input(&ctx);
-	if (avio_ctx)
+	if (avio_ctx) {
 		av_freep(&avio_ctx->buffer);
-	av_freep(&avio_ctx);
+		av_freep(&avio_ctx);
+	}
 
 	if (video_ctx) {
 		avcodec_close(video_ctx);
