@@ -166,7 +166,14 @@ void Video::init_stream()
 	status = avformat_find_stream_info(ctx, nullptr);
 	errcheck(status);
 
-	video_stream = ctx->streams[av_find_default_stream_index(ctx)];
+	for (decltype(ctx->nb_streams) i = 0; i < ctx->nb_streams; ++i) {
+		auto stream = ctx->streams[i];
+		if (!stream || !stream->codec)
+			continue;
+		if (stream->codec->codec_type != AVMEDIA_TYPE_VIDEO)
+			video_stream = stream;
+	}
+	errcheck(video_stream, "Could not find valid video stream");
 
 	width = video_stream->codec->width;
 	heigh = video_stream->codec->height;
