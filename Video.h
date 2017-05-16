@@ -23,7 +23,7 @@ class Video
 	static constexpr AVPixelFormat output_pix_format{AV_PIX_FMT_GRAY8};
 
 	struct {
-		uint8_t *ptr;
+		uint8_t *ptr{nullptr};
 		size_t size;
 	} bd;
 
@@ -36,16 +36,16 @@ class Video
 	AVPixelFormat input_pix_format;
 
 	size_t avio_ctx_buffer_size = 32 * 1024; // 32 KiB
-	uint8_t *avio_ctx_buffer;
+	uint8_t *avio_ctx_buffer{nullptr};
 
-	AVFormatContext *ctx;
-	AVIOContext *avio_ctx;
+	AVFormatContext *ctx{nullptr};
+	AVIOContext *avio_ctx{nullptr};
 
-	uint8_t *frame_converted_buffer;
-	AVFrame *frame_converted;
+	uint8_t *frame_converted_buffer{nullptr};
+	AVFrame *frame_converted{nullptr};
 
-	AVFrame *frame;
-	AVPacket pkt;
+	AVFrame *frame{nullptr};
+	AVPacket *pkt{nullptr};
 
 	void init_stream();
 	void init_codec();

@@ -64,9 +64,9 @@ Video::Video()
 	frame = av_frame_alloc();
 	errcheck(frame, "Could not allocate frame");
 
-	av_init_packet(&pkt);
-	pkt.data = nullptr;
-	pkt.size = 0;
+	pkt = static_cast<AVPacket*>(av_malloc(sizeof(AVPacket)));
+	errcheck(pkt, "Could not allocate packet");
+	av_init_packet(pkt);
 }
 
 Video::Video(void *data_ptr, size_t data_size) : Video()
@@ -92,6 +92,10 @@ Video::~Video()
 		av_freep(&frame_converted_buffer);
 	if (frame_converted)
 		av_frame_free(&frame_converted);
+	if (pkt) {
+		av_free_packet(pkt);
+		av_free(pkt);
+	}
 }
 
 void Video::set(void *data_ptr, size_t data_size)
@@ -102,16 +106,18 @@ void Video::set(void *data_ptr, size_t data_size)
 	init_stream();
 	init_frame_converted();
 	init_codec();
+	pkt->data = nullptr;
+	pkt->size = 0;
 }
 
 void Video::process(
     std::function<void(unsigned char *buf, int wrap, int xsize, int ysize)> f_)
 {
 	int frame_count{0};
-	while (av_read_frame(ctx, &pkt) >= 0) {
+	while (av_read_frame(ctx, pkt) >= 0) {
 		int got_frame;
 		auto len =
-		    avcodec_decode_video2(video_ctx, frame, &got_frame, &pkt);
+		    avcodec_decode_video2(video_ctx, frame, &got_frame, pkt);
 		errcheck(len);
 
 		if (got_frame == 0)
@@ -131,9 +137,9 @@ void Video::process(
 		++frame_count;
 		sws_freeContext(gray_convert_ctx);
 
-		if (pkt.data) {
-			pkt.size -= len;
-			pkt.data += len;
+		if (pkt->data) {
+			pkt->size -= len;
+			pkt->data += len;
 		}
 	}
 }
