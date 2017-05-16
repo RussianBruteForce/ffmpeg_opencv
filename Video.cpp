@@ -114,7 +114,8 @@ void Video::process(
     std::function<void(unsigned char *buf, int wrap, int xsize, int ysize)> f_)
 {
 	int frame_count{0};
-	while (av_read_frame(ctx, pkt) >= 0) {
+	int status = -1;
+	while ((status = av_read_frame(ctx, pkt)) >= 0) {
 		int got_frame;
 		auto len =
 		    avcodec_decode_video2(video_ctx, frame, &got_frame, pkt);
@@ -142,6 +143,7 @@ void Video::process(
 			pkt->data += len;
 		}
 	}
+	errcheck(status);
 }
 
 void Video::init_stream()
