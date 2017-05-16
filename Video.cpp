@@ -143,7 +143,8 @@ void Video::process(
 			pkt->data += len;
 		}
 	}
-	errcheck(status);
+	if (status != AVERROR_EOF)
+		errcheck(status);
 }
 
 void Video::init_stream()
