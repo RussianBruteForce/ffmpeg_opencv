@@ -36,10 +36,13 @@ int main(int argc, const char **argv)
 		std::cout << "read " << argv[1] << ": "
 			  << std::to_string(data.size() / 1024) << "KiB\n";
 
+		auto buf = new uint8_t[data.size()];
+		memcpy(buf, data.data(), data.size());
+
 		Classifier c;
 		{
 			Video v;
-			v.set(data.data(), data.size());
+			v.set(buf, data.size());
 
 			v.process([&c](unsigned char *data, int wrap, int xsize,
 				       int ysize) {
@@ -49,6 +52,7 @@ int main(int argc, const char **argv)
 				std::cout << "faces: " << a.faces
 					  << " eyes: " << a.eyes << '\n';
 			});
+			std::cout << "END" << std::endl;
 		}
 	} catch (const std::runtime_error &e) {
 		std::cout << "error: " << e.what() << '\n';

@@ -6,9 +6,24 @@ extern "C" {
 }
 
 #include <functional>
+#include <memory>
 
 class Video
 {
+	using byte = uint8_t;
+	class mem_ctx {
+	public:
+		mem_ctx() = delete;
+		mem_ctx(const Video::byte* data, size_t size);
+//		~mem_ctx();
+
+		static int read(void *opaque, uint8_t *buf, int size);
+		static int64_t seek(void *opaque, int64_t pos, int whence);
+
+	private:
+		const size_t data_size{0};
+		std::unique_ptr<FILE, decltype(&std::fclose)> f;
+	};
       public:
 	static std::string TAG;
 
@@ -30,6 +45,7 @@ class Video
 	bool video_ctx_opened{false};
 	AVCodecContext *video_ctx{nullptr};
 	AVStream *video_stream{nullptr};
+	int video_stream_idx{-1};
 
 	size_t width;
 	size_t heigh;
@@ -51,4 +67,8 @@ class Video
 	void init_stream();
 	void init_codec();
 	void init_frame_converted();
+
+	int decode_packet(int *got_frame, int cached, int& video_frame_count);
+
+	std::unique_ptr<mem_ctx> data;
 };
