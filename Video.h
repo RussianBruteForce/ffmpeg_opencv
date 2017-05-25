@@ -12,7 +12,7 @@ extern "C" {
 #include <vector>
 
 /*
- * Define, if you are use av_malloc allocated buffer.
+ * Define, if you use av_malloc allocated buffer.
  * It will be free'd automatically.
  */
 //#define VIDEO_AVBUFFER
