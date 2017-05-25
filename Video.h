@@ -43,7 +43,7 @@ class Video
       public:
 	static string TAG;
 
-	class VideoError : public std::runtime_error
+	class VideoError final : public std::runtime_error
 	{
 	      public:
 		explicit VideoError(const string &what_arg)
