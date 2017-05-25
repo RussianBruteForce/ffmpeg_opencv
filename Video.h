@@ -1,21 +1,34 @@
+
 #pragma once
 
 extern "C" {
-#include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 }
 
-#include <functional>
+#include <string>
+#include <stdexcept>
 #include <memory>
+#include <vector>
+#include <functional>
+
+/*
+ * Define, if you are use av_malloc allocated buffer.
+ * It will be free'd automatically.
+ */
+//#define VIDEO_AVBUFFER
 
 class Video
 {
+public:
 	using byte = uint8_t;
+	using string = std::string;
+
+private:
+#ifndef VIDEO_AVBUFFER
 	class mem_ctx {
 	public:
 		mem_ctx() = delete;
 		mem_ctx(const Video::byte* data, size_t size);
-//		~mem_ctx();
 
 		static int read(void *opaque, uint8_t *buf, int size);
 		static int64_t seek(void *opaque, int64_t pos, int whence);
@@ -24,51 +37,58 @@ class Video
 		const size_t data_size{0};
 		std::unique_ptr<FILE, decltype(&std::fclose)> f;
 	};
-      public:
-	static std::string TAG;
+#endif
+
+public:
+	static string TAG;
+
+	class VideoError : public std::runtime_error {
+	public:
+		explicit VideoError (const string& what_arg):
+		        std::runtime_error(what_arg){}
+		explicit VideoError (const char* what_arg):
+		        std::runtime_error(what_arg) {}
+	};
 
 	Video();
-	Video(void *data_ptr, size_t data_size);
 	~Video();
+	Video(void* data, size_t size);
+	void set(void* data_, size_t size);
+	void process(std::function<void(unsigned char*, int, int, int)> f_);
 
-	void set(void *data_ptr, size_t data_size);
-	void process(std::function<void(unsigned char *, int, int, int)> f_);
+private:
+	static constexpr auto refcount{false};
 
-      private:
 	static constexpr AVPixelFormat output_pix_format{AV_PIX_FMT_GRAY8};
+	AVPixelFormat input_pix_format{AV_PIX_FMT_NONE};
 
-	struct {
-		uint8_t *ptr{nullptr};
-		size_t size;
-	} bd;
+	byte* data_ptr{nullptr};
+	size_t data_size{0};
 
-	bool video_ctx_opened{false};
-	AVCodecContext *video_ctx{nullptr};
-	AVStream *video_stream{nullptr};
-	int video_stream_idx{-1};
-
-	size_t width;
-	size_t heigh;
-
-	AVPixelFormat input_pix_format;
-
-	size_t avio_ctx_buffer_size = 32 * 1024; // 32 KiB
-	uint8_t *avio_ctx_buffer{nullptr};
-
-	AVFormatContext *ctx{nullptr};
-	AVIOContext *avio_ctx{nullptr};
-
-	uint8_t *frame_converted_buffer{nullptr};
-	AVFrame *frame_converted{nullptr};
-
-	AVFrame *frame{nullptr};
-	AVPacket *pkt{nullptr};
-
-	void init_stream();
-	void init_codec();
-	void init_frame_converted();
-
-	int decode_packet(int *got_frame, int cached, int& video_frame_count);
-
+#ifndef VIDEO_AVBUFFER
+	static constexpr auto BUFFER_SIZE{16*1024};
 	std::unique_ptr<mem_ctx> data;
+	byte* buffer;
+#endif
+
+	template<class T>
+	using ptr_ = std::unique_ptr<T, decltype(&::av_free)>;
+
+	template<class T>
+	ptr_<T> mk_ptr_(T* ptr) {
+		return ptr_<T>{ptr, &::av_free};
+	}
+
+	ptr_<AVFormatContext> fmt_ctx;
+	ptr_<AVFrame> frame;
+	ptr_<AVFrame> frame_converted{nullptr, &::av_free};
+
+	ptr_<AVIOContext> avio_ctx{nullptr, &::av_free};
+
+	ptr_<AVPacket> pkt;
+
+	int video_stream_idx{-1};
+	ptr_<AVCodecContext> dec_ctx{nullptr, &::av_free};
+
+	void frame_converted_alloc();
 };
