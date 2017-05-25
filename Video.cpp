@@ -214,11 +214,14 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 		 */
 		av_packet_unref(pkt.get());
 
+		auto w = frame->width;
+		auto h = frame->height;
+		if (!w || !h)
+			continue;
+
 		if (!frame_converted)
 			frame_converted_alloc();
 
-		auto w = frame->width;
-		auto h = frame->height;
 		auto gray_convert_ctx = sws_getContext(
 		    w, h, dec_ctx->pix_fmt, w, h, output_pix_format, SWS_POINT,
 		    nullptr, nullptr, nullptr);
