@@ -1,15 +1,16 @@
 #include "Video.h"
 
 extern "C" {
-#include <libavformat/avformat.h>
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
 #include <libswscale/swscale.h>
 }
 
-#include <cstdio>
 #include <array>
+#include <cstdio>
 
-namespace {
+namespace
+{
 static Video::string averr(int code)
 {
 	static thread_local std::array<char, AV_ERROR_MAX_STRING_SIZE> buf;
@@ -29,7 +30,7 @@ static void errcheck(int val)
 		errthrow(errstr(val));
 }
 
-template <class T> static void errcheck(const T& val, const char* errmsg)
+template <class T> static void errcheck(const T &val, const char *errmsg)
 {
 	if (!static_cast<bool>(val))
 		errthrow(errstr(errmsg));
@@ -48,20 +49,22 @@ template <class T> static void errcheck(T *ptr, const char *errmsg = nullptr)
 
 Video::string Video::TAG{"Video"};
 
-Video::Video():
-        #ifndef VIDEO_AVBUFFER
-        buffer{static_cast<decltype(buffer)>(av_malloc(BUFFER_SIZE))},
-        #endif
-        fmt_ctx{avformat_alloc_context(), [](void *ptr_) {
-	auto ptr = static_cast<AVFormatContext*>(ptr_);
-	avformat_close_input(&ptr);
-}},
-        frame{av_frame_alloc(),[](void *ptr_) {
-	auto ptr = static_cast<AVFrame*>(ptr_);
-	av_frame_free(&ptr);
-}},
-        pkt{static_cast<AVPacket *>(av_malloc(sizeof(AVPacket))),
-            &::av_free}
+Video::Video()
+    :
+#ifndef VIDEO_AVBUFFER
+      buffer{static_cast<decltype(buffer)>(av_malloc(BUFFER_SIZE))},
+#endif
+      fmt_ctx{avformat_alloc_context(),
+	      [](void *ptr_) {
+		      auto ptr = static_cast<AVFormatContext *>(ptr_);
+		      avformat_close_input(&ptr);
+	      }},
+      frame{av_frame_alloc(),
+	    [](void *ptr_) {
+		    auto ptr = static_cast<AVFrame *>(ptr_);
+		    av_frame_free(&ptr);
+	    }},
+      pkt{static_cast<AVPacket *>(av_malloc(sizeof(AVPacket))), &::av_free}
 {
 	av_register_all();
 	errcheck(fmt_ctx, "Could not allocate context");
@@ -70,23 +73,20 @@ Video::Video():
 	pkt->size = 0;
 }
 
-Video::~Video() {
-	if(avio_ctx) {
+Video::~Video()
+{
+	if (avio_ctx) {
 		av_freep(&avio_ctx->buffer);
 	}
 	// In case of error this will prevent memleak
 	av_packet_unref(pkt.get());
 }
 
-Video::Video(void* data, size_t size):
-        Video()
-{
-	set(data, size);
-}
+Video::Video(void *data, size_t size) : Video() { set(data, size); }
 
-void Video::set(void* data_, size_t size_)
+void Video::set(void *data_, size_t size_)
 {
-	data_ptr = static_cast<byte*>(data_);
+	data_ptr = static_cast<byte *>(data_);
 	data_size = size_;
 
 	constexpr auto buffer_is_writable{false};
@@ -94,24 +94,21 @@ void Video::set(void* data_, size_t size_)
 #ifndef VIDEO_AVBUFFER
 	data = std::make_unique<mem_ctx>(data_ptr, data_size);
 
-	avio_ctx = mk_ptr_(
-	                   avio_alloc_context(buffer, BUFFER_SIZE,
-	                                      buffer_is_writable,
-	                                      data.get(), &mem_ctx::read, nullptr, &mem_ctx::seek)
-	                   );
+	avio_ctx = mk_ptr_(avio_alloc_context(
+	    buffer, BUFFER_SIZE, buffer_is_writable, data.get(), &mem_ctx::read,
+	    nullptr, &mem_ctx::seek));
 #else
-	avio_ctx = mk_ptr_(
-	                   avio_alloc_context(data_ptr, data_size,
-	                                      buffer_is_writable,
-	                                      nullptr, nullptr, nullptr, nullptr)
-	                   );
+	avio_ctx =
+	    mk_ptr_(avio_alloc_context(data_ptr, data_size, buffer_is_writable,
+				       nullptr, nullptr, nullptr, nullptr));
 #endif
 	errcheck(avio_ctx, "Could not allocate context");
 
 	fmt_ctx->pb = avio_ctx.get();
 
 	auto fmt_ctx_ptr = fmt_ctx.get();
-	auto status =avformat_open_input(&fmt_ctx_ptr, nullptr, nullptr, nullptr);
+	auto status =
+	    avformat_open_input(&fmt_ctx_ptr, nullptr, nullptr, nullptr);
 	errcheck(status);
 
 	status = avformat_find_stream_info(fmt_ctx_ptr, nullptr);
@@ -121,12 +118,11 @@ void Video::set(void* data_, size_t size_)
 
 	auto auto_{-1};
 	auto flags{0};
-	video_stream_idx= av_find_best_stream(fmt_ctx_ptr,
-	                                      AVMEDIA_TYPE_VIDEO, auto_, auto_, nullptr, flags);
+	video_stream_idx = av_find_best_stream(fmt_ctx_ptr, AVMEDIA_TYPE_VIDEO,
+					       auto_, auto_, nullptr, flags);
 	errcheck(video_stream_idx);
 
-	AVStream *st =
-	                fmt_ctx->streams[video_stream_idx];
+	AVStream *st = fmt_ctx->streams[video_stream_idx];
 
 	input_pix_format = st->codec->pix_fmt;
 
@@ -134,11 +130,11 @@ void Video::set(void* data_, size_t size_)
 	//	Drop old ffmpeg support
 	//	AVCodec *dec = avcodec_find_decoder(st->codec->codec_id);
 
-	dec_ctx = ptr_<AVCodecContext>{avcodec_alloc_context3(dec),
-	          [](void*ptr_) {
-		auto ptr = static_cast<AVCodecContext*>(ptr_);
-		avcodec_free_context(&ptr);
-	}};
+	dec_ctx = ptr_<AVCodecContext>{
+	    avcodec_alloc_context3(dec), [](void *ptr_) {
+		    auto ptr = static_cast<AVCodecContext *>(ptr_);
+		    avcodec_free_context(&ptr);
+	    }};
 	errcheck(dec_ctx, "Could not allocate context");
 
 	status = avcodec_parameters_to_context(dec_ctx.get(), st->codecpar);
@@ -146,7 +142,7 @@ void Video::set(void* data_, size_t size_)
 
 	AVDictionary *opts{nullptr};
 	av_dict_set(&opts, "refcounted_frames", refcount ? "1" : "0", 0);
-	status =avcodec_open2(dec_ctx.get(), dec, &opts);
+	status = avcodec_open2(dec_ctx.get(), dec, &opts);
 	errcheck(status);
 }
 
@@ -165,14 +161,16 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 
 		status = avcodec_send_packet(dec_ctx.get(), pkt.get());
 
-		if (status < 0 && status != AVERROR(EAGAIN) && status != AVERROR_EOF)
+		if (status < 0 && status != AVERROR(EAGAIN) &&
+		    status != AVERROR_EOF)
 			errthrow(errstr(status));
 		if (status >= 0)
 			pkt->size = 0;
 
 		status = avcodec_receive_frame(dec_ctx.get(), frame.get());
 
-		if (status < 0 && status != AVERROR(EAGAIN) && status != AVERROR_EOF)
+		if (status < 0 && status != AVERROR(EAGAIN) &&
+		    status != AVERROR_EOF)
 			errthrow(errstr(status));
 
 		/*
@@ -186,14 +184,14 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 		auto w = frame->width;
 		auto h = frame->height;
 		auto gray_convert_ctx = sws_getContext(
-		                                w, h, input_pix_format, w, h, output_pix_format, SWS_POINT,
-		                                nullptr, nullptr, nullptr);
+		    w, h, input_pix_format, w, h, output_pix_format, SWS_POINT,
+		    nullptr, nullptr, nullptr);
 
 		sws_scale(gray_convert_ctx, frame->data, frame->linesize, 0, h,
-		          frame_converted->data, frame_converted->linesize);
+			  frame_converted->data, frame_converted->linesize);
 
 		f_(frame_converted->data[0], frame_converted->linesize[0], w,
-		                h);
+		   h);
 		sws_freeContext(gray_convert_ctx);
 	}
 }
@@ -202,24 +200,26 @@ void Video::frame_converted_alloc()
 {
 	// TODO: alloc only required buffer
 	AVFrame *new_frame = av_frame_clone(frame.get());
-	frame_converted = ptr_<AVFrame>{new_frame,[](void *ptr_) {
-		auto ptr = static_cast<AVFrame*>(ptr_);
-		av_frame_free(&ptr);
-	}};
+	frame_converted =
+	    ptr_<AVFrame>{new_frame, [](void *ptr_) {
+				  auto ptr = static_cast<AVFrame *>(ptr_);
+				  av_frame_free(&ptr);
+			  }};
 }
 
 #ifndef VIDEO_AVBUFFER
-Video::mem_ctx::mem_ctx(const Video::byte* data, size_t size):
-        data_size{size},
-        f{::fmemopen(const_cast<Video::byte*>(data), data_size, "r"),
-          &std::fclose}
+Video::mem_ctx::mem_ctx(const Video::byte *data, size_t size)
+    : data_size{size},
+      f{::fmemopen(const_cast<Video::byte *>(data), data_size, "r"),
+	&std::fclose}
 {
 	if (!f)
 		throw Video::VideoError{"Can't open buffer"};
 }
 
-int Video::mem_ctx::read(void* opaque, uint8_t* buf, int size) {
-	auto ctx = static_cast<mem_ctx*>(opaque);
+int Video::mem_ctx::read(void *opaque, uint8_t *buf, int size)
+{
+	auto ctx = static_cast<mem_ctx *>(opaque);
 	auto f = ctx->f.get();
 	auto status = std::fread(buf, sizeof(uint8_t), size, f);
 
@@ -234,10 +234,11 @@ int Video::mem_ctx::read(void* opaque, uint8_t* buf, int size) {
 	}
 }
 
-int64_t Video::mem_ctx::seek(void* opaque, int64_t pos, int whence) {
+int64_t Video::mem_ctx::seek(void *opaque, int64_t pos, int whence)
+{
 	if (pos < 0)
 		return -1;
-	auto *ctx = static_cast<mem_ctx*>(opaque);
+	auto *ctx = static_cast<mem_ctx *>(opaque);
 	auto f = ctx->f.get();
 
 	switch (whence) {

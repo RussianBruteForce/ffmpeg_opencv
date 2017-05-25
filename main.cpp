@@ -41,8 +41,9 @@ int main(int argc, const char **argv)
 			Video v;
 			v.set(data.data(), data.size());
 
-			v.process([&c, &f_total, &e_total](unsigned char *data, int wrap, int xsize,
-				       int ysize) {
+			v.process([&c, &f_total, &e_total](unsigned char *data,
+							   int wrap, int xsize,
+							   int ysize) {
 				cv::Mat frame(ysize, xsize, CV_8UC1, data,
 					      wrap);
 				auto a = c.classify(frame);
@@ -51,8 +52,8 @@ int main(int argc, const char **argv)
 			});
 			std::cout << "END" << std::endl;
 		}
-		std::cout << "faces: " << f_total
-		          << " eyes: " << e_total << '\n';
+		std::cout << "faces: " << f_total << " eyes: " << e_total
+			  << '\n';
 	} catch (const std::runtime_error &e) {
 		std::cout << "error: " << e.what() << '\n';
 	}
