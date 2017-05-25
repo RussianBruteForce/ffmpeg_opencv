@@ -111,7 +111,7 @@ Video::~Video()
 	av_packet_unref(pkt.get());
 }
 
-Video::Video(void *data, size_t size) : Video() { set(data, size); }
+Video::Video(void *data_, size_t size_) : Video() { set(data_, size_); }
 
 void Video::set(void *data_, size_t size_)
 {
@@ -235,9 +235,9 @@ void Video::frame_converted_alloc()
 }
 
 #ifndef VIDEO_AVBUFFER
-Video::mem_ctx::mem_ctx(const Video::byte *data, size_t size)
-    : data_size{size},
-      f{::fmemopen(const_cast<Video::byte *>(data), data_size, "r"),
+Video::mem_ctx::mem_ctx(const Video::byte *data_, size_t size_)
+    : data_size{size_},
+      f{::fmemopen(const_cast<Video::byte *>(data_), data_size, "r"),
 	&std::fclose}
 {
 	if (!f)

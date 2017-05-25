@@ -34,7 +34,7 @@ class Video
 	{
 	      public:
 		mem_ctx() = delete;
-		mem_ctx(const Video::byte *data, size_t size);
+		mem_ctx(const Video::byte *data_, size_t size);
 
 		static int read(void *opaque, uint8_t *buf, int size);
 		static int64_t seek(void *opaque, int64_t pos, int whence);
@@ -67,7 +67,7 @@ class Video
 
 	Video();
 	~Video();
-	Video(void *data, size_t size);
+	Video(void *data_, size_t size_);
 	void set(void *data_, size_t size);
 	void process(std::function<void(unsigned char *, int, int, int)> f_);
 
