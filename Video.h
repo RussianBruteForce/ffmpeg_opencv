@@ -66,7 +66,6 @@ class Video
 	static constexpr auto refcount{false};
 
 	static constexpr AVPixelFormat output_pix_format{AV_PIX_FMT_GRAY8};
-	AVPixelFormat input_pix_format{AV_PIX_FMT_NONE};
 
 	byte *data_ptr{nullptr};
 	size_t data_size{0};

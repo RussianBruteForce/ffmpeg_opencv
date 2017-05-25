@@ -124,8 +124,6 @@ void Video::set(void *data_, size_t size_)
 
 	AVStream *st = fmt_ctx->streams[video_stream_idx];
 
-	input_pix_format = st->codec->pix_fmt;
-
 	AVCodec *dec = avcodec_find_decoder(st->codecpar->codec_id);
 	//	Drop old ffmpeg support
 	//	AVCodec *dec = avcodec_find_decoder(st->codec->codec_id);
@@ -184,7 +182,7 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 		auto w = frame->width;
 		auto h = frame->height;
 		auto gray_convert_ctx = sws_getContext(
-		    w, h, input_pix_format, w, h, output_pix_format, SWS_POINT,
+		    w, h, dec_ctx->pix_fmt, w, h, output_pix_format, SWS_POINT,
 		    nullptr, nullptr, nullptr);
 
 		sws_scale(gray_convert_ctx, frame->data, frame->linesize, 0, h,
