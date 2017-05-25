@@ -35,14 +35,10 @@ int main(int argc, const char **argv)
 		auto data = read_file(argv[1]);
 		std::cout << "read " << argv[1] << ": "
 			  << std::to_string(data.size() / 1024) << "KiB\n";
-
-		auto buf = new uint8_t[data.size()];
-		memcpy(buf, data.data(), data.size());
-
 		Classifier c;
 		{
 			Video v;
-			v.set(buf, data.size());
+			v.set(data.data(), data.size());
 
 			v.process([&c](unsigned char *data, int wrap, int xsize,
 				       int ysize) {
