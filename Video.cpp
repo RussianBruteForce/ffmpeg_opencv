@@ -33,7 +33,7 @@ static Video::string errstr(int err)
 	{
 		Video::TAG
 	}
-#endif
+#endif // VIDEO_CUSTOM_TAG
 	    + ": " + averr(err);
 }
 
@@ -47,7 +47,7 @@ static Video::string errstr(const char *err)
 	{
 		Video::TAG
 	}
-#endif
+#endif // VIDEO_CUSTOM_TAG
 	    + ": " + err;
 }
 
@@ -81,7 +81,7 @@ template <class T> static void errcheck(T *ptr, const char *errmsg = nullptr)
 
 #ifdef VIDEO_CUSTOM_TAG
 Video::string Video::TAG{"Video"};
-#endif
+#endif // VIDEO_CUSTOM_TAG
 
 Video::Video()
     :
@@ -135,7 +135,7 @@ void Video::set(void *data_, size_t size_)
 	avio_ctx =
 	    mk_ptr_(avio_alloc_context(data_ptr, data_size, buffer_is_writable,
 				       nullptr, nullptr, nullptr, nullptr));
-#endif
+#endif // VIDEO_AVBUFFER
 	errcheck(avio_ctx, "Could not allocate context");
 
 	fmt_ctx->pb = avio_ctx.get();
@@ -150,7 +150,7 @@ void Video::set(void *data_, size_t size_)
 
 #ifdef VIDEO_DUMP_FORMAT
 	av_dump_format(fmt_ctx_ptr, 0, nullptr, 0);
-#endif
+#endif // VIDEO_DUMP_FORMAT
 
 	auto auto_{-1};
 	auto flags{0};
@@ -303,6 +303,6 @@ int64_t Video::mem_ctx::seek(void *opaque, int64_t pos, int whence)
 	else
 		return -1;
 }
-#endif
+#endif // VIDEO_AVBUFFER
 
 #pragma clang diagnostic pop
