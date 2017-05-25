@@ -26,6 +26,11 @@ extern "C" {
  */
 //#define VIDEO_CUSTOM_TAG
 
+/*
+ * Define, if you want to dump format to stdout
+ */
+//#define VIDEO_DUMP_FORMAT
+
 class Video
 {
       public:

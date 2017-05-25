@@ -148,7 +148,9 @@ void Video::set(void *data_, size_t size_)
 	status = avformat_find_stream_info(fmt_ctx_ptr, nullptr);
 	errcheck(status);
 
+#ifdef VIDEO_DUMP_FORMAT
 	av_dump_format(fmt_ctx_ptr, 0, nullptr, 0);
+#endif
 
 	auto auto_{-1};
 	auto flags{0};
