@@ -7,8 +7,8 @@ cv::String Classifier::face_cascade_name = "lbpcascade_frontalface.xml";
 cv::String Classifier::eyes_cascade_name =
     "haarcascade_eye_tree_eyeglasses.xml";
 
-cv::Size Classifier::face_min_size = cv::Size(30, 30);
-cv::Size Classifier::eye_min_size = cv::Size(30, 15);
+cv::Size Classifier::face_min_size = cv::Size(210, 210);
+cv::Size Classifier::eye_min_size = cv::Size(50, 25);
 
 Classifier::Classifier()
 {
