@@ -18,9 +18,33 @@ static Video::string averr(int code)
 	return Video::string(buf.data(), buf.size());
 }
 
-static Video::string errstr(int err) { return Video::TAG + ": " + averr(err); }
+static Video::string errstr(int err)
+{
+	return
+#ifdef VIDEO_CUSTOM_TAG
+	    Video::TAG
+#else
+	    Video::string
+	{
+		Video::TAG
+	}
+#endif
+	    + ": " + averr(err);
+}
 
-static Video::string errstr(const char *err) { return Video::TAG + ": " + err; }
+static Video::string errstr(const char *err)
+{
+	return
+#ifdef VIDEO_CUSTOM_TAG
+	    Video::TAG
+#else
+	    Video::string
+	{
+		Video::TAG
+	}
+#endif
+	    + ": " + err;
+}
 
 [[ noreturn ]]
 static void errthrow(const Video::string &err) { throw Video::VideoError{err}; }
@@ -48,7 +72,9 @@ template <class T> static void errcheck(T *ptr, const char *errmsg = nullptr)
 }
 } // anonymous namespace
 
+#ifdef VIDEO_CUSTOM_TAG
 Video::string Video::TAG{"Video"};
+#endif
 
 Video::Video()
     :

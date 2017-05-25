@@ -17,6 +17,11 @@ extern "C" {
  */
 //#define VIDEO_AVBUFFER
 
+/*
+ * Define, if you want to customize TAG in runtime
+ */
+//#define VIDEO_CUSTOM_TAG
+
 class Video
 {
       public:
@@ -41,7 +46,11 @@ class Video
 #endif
 
       public:
+#ifdef VIDEO_CUSTOM_TAG
 	static string TAG;
+#else
+	static constexpr auto TAG{"Video"};
+#endif
 
 	class VideoError final : public std::runtime_error
 	{
