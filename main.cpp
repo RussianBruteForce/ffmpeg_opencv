@@ -35,21 +35,24 @@ int main(int argc, const char **argv)
 		auto data = read_file(argv[1]);
 		std::cout << "read " << argv[1] << ": "
 			  << std::to_string(data.size() / 1024) << "KiB\n";
+		size_t f_total{0}, e_total{0};
 		Classifier c;
 		{
 			Video v;
 			v.set(data.data(), data.size());
 
-			v.process([&c](unsigned char *data, int wrap, int xsize,
+			v.process([&c, &f_total, &e_total](unsigned char *data, int wrap, int xsize,
 				       int ysize) {
 				cv::Mat frame(ysize, xsize, CV_8UC1, data,
 					      wrap);
 				auto a = c.classify(frame);
-				std::cout << "faces: " << a.faces
-					  << " eyes: " << a.eyes << '\n';
+				f_total += a.faces;
+				e_total += a.eyes;
 			});
 			std::cout << "END" << std::endl;
 		}
+		std::cout << "faces: " << f_total
+		          << " eyes: " << e_total << '\n';
 	} catch (const std::runtime_error &e) {
 		std::cout << "error: " << e.what() << '\n';
 	}
