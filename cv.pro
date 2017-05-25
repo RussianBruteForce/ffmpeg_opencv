@@ -7,28 +7,27 @@ SOURCES += main.cpp \
     Video.cpp \
     Classifier.cpp
 
-LIBS += \
-    -lopencv_imgproc \
-    -lopencv_video \
-    -lopencv_objdetect \
-    -lopencv_core \
+HOME = $$system(echo ~)
+FFMPEG_BUILD = $$HOME/ffmpeg_build
 
-#    -lavutil \
-#    -lavcodec \
-#    -lavformat \
-#    -lswscale \
+!exists($$FFMPEG_BUILD):error("Looks like you don't set FFMPEG_BUILD variable")
 
-LIBS += -lpthread \
-        /home/abc/ffmpeg_build/lib/libavcodec.so \
-        /home/abc/ffmpeg_build/lib/libavdevice.so \
-        /home/abc/ffmpeg_build/lib/libavfilter.so \
-        /home/abc/ffmpeg_build/lib/libavformat.so \
-        /home/abc/ffmpeg_build/lib/libavutil.so \
-        /home/abc/ffmpeg_build/lib/libpostproc.so \
-        /home/abc/ffmpeg_build/lib/libswresample.so \
-        /home/abc/ffmpeg_build/lib/libswscale.so
+# ffmpeg
+LIBS += -lpthread\
+       -lopencv_imgproc \
+       -lopencv_video \
+       -lopencv_objdetect \
+       -lopencv_core \
+        $$FFMPEG_BUILD/lib/libavcodec.so \
+        $$FFMPEG_BUILD/lib/libavdevice.so \
+        $$FFMPEG_BUILD/lib/libavfilter.so \
+        $$FFMPEG_BUILD/lib/libavformat.so \
+        $$FFMPEG_BUILD/lib/libavutil.so \
+        $$FFMPEG_BUILD/lib/libpostproc.so \
+        $$FFMPEG_BUILD/lib/libswresample.so \
+        $$FFMPEG_BUILD/lib/libswscale.so
 
-INCLUDEPATH += "/home/abc/ffmpeg_build/include"
+INCLUDEPATH += $$FFMPEG_BUILD/include
 
 HEADERS += \
     Video.h \
