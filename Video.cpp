@@ -1,5 +1,10 @@
 #include "Video.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wshorten-64-to-32"
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -188,6 +193,9 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 
 		status = avcodec_send_packet(dec_ctx.get(), pkt.get());
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
+
 		if (status < 0 && status != AVERROR(EAGAIN) &&
 		    status != AVERROR_EOF)
 			errthrow(errstr(status));
@@ -199,6 +207,7 @@ void Video::process(std::function<void(unsigned char *, int, int, int)> f_)
 		if (status < 0 && status != AVERROR(EAGAIN) &&
 		    status != AVERROR_EOF)
 			errthrow(errstr(status));
+#pragma clang diagnostic pop
 
 		/*
 		 * Reset packet and clear buffers
@@ -290,3 +299,5 @@ int64_t Video::mem_ctx::seek(void *opaque, int64_t pos, int whence)
 		return -1;
 }
 #endif
+
+#pragma clang diagnostic pop

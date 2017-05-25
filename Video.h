@@ -1,5 +1,9 @@
 
 #pragma once
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
+#pragma clang diagnostic ignored "-Wweak-vtables"
+#pragma clang diagnostic ignored "-Wpadded"
 
 extern "C" {
 #include <libavformat/avformat.h>
@@ -106,3 +110,5 @@ class Video
 
 	void frame_converted_alloc();
 };
+
+#pragma clang diagnostic pop
