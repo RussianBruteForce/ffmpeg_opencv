@@ -46,8 +46,10 @@ static Video::string errstr(const char *err)
 	    + ": " + err;
 }
 
-[[ noreturn ]]
-static void errthrow(const Video::string &err) { throw Video::VideoError{err}; }
+[[noreturn]] static void errthrow(const Video::string &err)
+{
+	throw Video::VideoError{err};
+}
 
 static void errcheck(int val)
 {
