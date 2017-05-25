@@ -279,7 +279,6 @@ int64_t Video::mem_ctx::seek(void *opaque, int64_t pos, int whence)
 		break;
 	case AVSEEK_SIZE:
 		return ctx->data_size;
-		break;
 	default:
 		break;
 	}
